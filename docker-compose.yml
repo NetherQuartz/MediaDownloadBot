@@ -1,0 +1,9 @@
+version: "3.2"
+
+services:
+  bot:
+    build: .
+    container_name: tgbot-downloader
+    restart: always
+    environment:
+      - TOKEN
