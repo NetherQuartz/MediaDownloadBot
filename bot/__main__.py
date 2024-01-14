@@ -14,11 +14,19 @@ from .download import get_twitter_video
 telebot.logger.setLevel(logging.DEBUG if os.getenv("LOGGING_LEVEL") == "DEBUG" else logging.INFO)
 bot = AsyncTeleBot(token=os.getenv("TOKEN"))
 
+welcome_text = """
+Hello there 👋
+
+I can download videos from Twitter 🐦. Just send me twitter.com or x.com link
+
+Also you can add me to a group or use me in any chat with `@QuartzMediaBot <your link>`
+"""
+
 
 @bot.message_handler(commands=["start"])
 async def start(message: types.Message) -> None:
-    await bot.send_message(message.chat.id, "Привет")
-    
+    await bot.send_message(message.chat.id, text=welcome_text, parse_mode="markdown")
+
 
 twitter_pattern = r"(?:https?://)?(?:x.com|twitter.com)/.+/status/\d+"
 
