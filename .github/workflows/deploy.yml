@@ -1,0 +1,21 @@
+name: Deploy bot
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  release:
+    types: [ "created" ]
+
+jobs:
+  build:
+
+    name: Build image
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Docker check
+      run: |
+        docker ps
