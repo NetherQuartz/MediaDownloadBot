@@ -25,6 +25,7 @@ jobs:
         path: image.tar
 
   deploy:
+    needs: build
     name: Deploy bot
     runs-on: ubuntu-latest
     steps:
