@@ -9,13 +9,18 @@ on:
     types: [ "created" ]
 
 jobs:
-  build:
 
+  build:
     name: Build image
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
     - name: Docker check
       run: |
-        docker ps
+        docker build -t mediadownbot:latest .
+        docker save mediadownbot:latest -o image.tar
+    - name: Upload image to artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: image
+        path: image.tar
