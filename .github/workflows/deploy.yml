@@ -14,8 +14,8 @@ jobs:
     name: Build image
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v3
     - name: Docker build
-      uses: actions/checkout@v3
       run: |
         docker build -t mediadownbot:latest .
         docker save mediadownbot:latest -o image.tar
