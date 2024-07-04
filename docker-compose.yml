@@ -9,3 +9,4 @@ services:
       - LOGGING_LEVEL
       - TIKTOK_TOKEN
       - INSTAGRAM_TOKEN
+    mem_limit: 200m
