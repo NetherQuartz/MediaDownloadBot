@@ -1,6 +1,6 @@
 # MediaDownloadBot
 
-![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&link=https://t.me/QuartzMediaBot)
+[![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&link=https://t.me/QuartzMediaBot)](https://t.me/QuartzMediaBot)
 
 Telegram bot to download media from various sources
 
