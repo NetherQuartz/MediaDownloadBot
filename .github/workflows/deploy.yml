@@ -37,7 +37,9 @@ jobs:
       with:
         name: image
     - name: Create .env file
-      run: echo "TOKEN=${{ secrets.TG_TOKEN }}" > .env
+      run: |
+        echo "TOKEN=${{ secrets.TG_TOKEN }}" > .env
+        echo "RAPIDAPI_TOKEN=${{ secrets.RAPIDAPI_TOKEN }}" >> .env
     - name: Deploy
       uses: dawidd6/action-ansible-playbook@v2
       with:
