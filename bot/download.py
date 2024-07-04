@@ -78,6 +78,33 @@ async def get_pinterest_video(pin_url: str, return_url: bool = False) -> BytesIO
         return await download_video(session, video_url)
 
 
+async def get_pinterest_video_api(pin_url: str, return_url: bool = False) -> BytesIO | WebVideo | None:
+
+    url = "https://pinterest-video-and-image-downloader.p.rapidapi.com/pinterest"
+    querystring = {"url": pin_url}
+    headers = {
+        "x-rapidapi-key": os.getenv("RAPIDAPI_TOKEN"),
+        "x-rapidapi-host": "pinterest-video-and-image-downloader.p.rapidapi.com"
+    }
+    logger.debug(f"{pin_url=}")
+    async with aiohttp.ClientSession() as session, session.get(url, headers=headers, params=querystring) as response:
+        data = await response.json()
+        logger.debug(data)
+        if not data:
+            return await get_pinterest_video(pin_url, return_url)
+        data = data.get("data", {})
+        video_url = data.get("url")
+        thumbnail_url = data.get("thumbnail", "")
+
+        if not video_url:
+            return await get_pinterest_video(pin_url, return_url)
+
+        if return_url:
+            return WebVideo(video_url=video_url, thumbnail_url=thumbnail_url)
+
+        return await download_video(session, video_url)
+
+
 async def get_tiktok_video(tiktok_url: str, return_url: bool = False) -> BytesIO | WebVideo | None:
     url = "https://all-video-downloader1.p.rapidapi.com/tiktokdl"
     payload = f"-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"url\"\r\n\r\n{tiktok_url}\r\n-----011000010111000001101001--\r\n\r\n"
