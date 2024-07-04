@@ -79,7 +79,30 @@ async def get_pinterest_video(pin_url: str, return_url: bool = False) -> BytesIO
 
 
 async def get_tiktok_video(tiktok_url: str, return_url: bool = False) -> BytesIO | WebVideo | None:
-    pass
+    url = "https://all-video-downloader1.p.rapidapi.com/tiktokdl"
+    payload = f"-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"url\"\r\n\r\n{tiktok_url}\r\n-----011000010111000001101001--\r\n\r\n"
+    headers = {
+        "x-rapidapi-key": os.getenv("TIKTOK_TOKEN"),
+        "x-rapidapi-host": "all-video-downloader1.p.rapidapi.com",
+        "Content-Type": "multipart/form-data; boundary=---011000010111000001101001"
+    }
+    logger.debug(f"{tiktok_url=}")
+    async with aiohttp.ClientSession() as session, session.post(url, data=payload, headers=headers) as response:
+
+        data = await response.json()
+        logger.debug(data)
+        if not data:
+            return None
+        data = data.get("result", {}).get("data", {})
+        video_url = data.get("play")
+        thumbnail_url = data.get("cover")
+        if not video_url:
+            return None
+
+        if return_url:
+            return WebVideo(video_url=video_url, thumbnail_url=thumbnail_url)
+
+        return await download_video(session, video_url)
 
 
 async def get_instagram_video(instagram_url: str, return_url: bool = False) -> BytesIO | WebVideo | None:

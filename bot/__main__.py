@@ -9,7 +9,12 @@ import telebot
 from telebot.async_telebot import AsyncTeleBot
 from telebot import types
 
-from .download import get_twitter_video, get_pinterest_video, get_instagram_video
+from .download import (
+    get_twitter_video,
+    get_pinterest_video,
+    get_instagram_video,
+    get_tiktok_video
+)
 
 telebot.logger.setLevel(logging.DEBUG if os.getenv("LOGGING_LEVEL") == "DEBUG" else logging.INFO)
 bot = AsyncTeleBot(token=os.getenv("TOKEN"))
@@ -17,7 +22,7 @@ bot = AsyncTeleBot(token=os.getenv("TOKEN"))
 welcome_text = """
 Hello there 👋
 
-I can download videos from Twitter 🐦 and Pinterest 📍. Just send me twitter.com, x.com or pin.it link
+I can download videos from X/Twitter 🐦, Pinterest 📍, Instagram 📸 and TikTok ♪. Just send me a link
 
 Also you can add me to a group or use me in any chat with `@QuartzMediaBot <your link>`
 """
@@ -31,6 +36,7 @@ async def start(message: types.Message) -> None:
 twitter_pattern = r"(?:https?://)?(?:x.com|twitter.com)/.+/status/\d+"
 pinterest_pattern = r"(?:https?://)?pin.it/\w+"
 instagram_pattern = r"(?:https?://)?(?:www\.)?instagram.com/\S+"
+tiktok_pattern = r"(?:https?://)?(?:www\.)?(?:\w+\.)tiktok.com/\S+"
 
 
 @bot.message_handler(regexp=twitter_pattern)
@@ -147,6 +153,46 @@ async def inline_download_instagram(query: types.InlineQuery) -> None:
                     video_url=video.video_url,
                     mime_type="video/mp4",
                     thumbnail_url="",
+                    title="Click here to send"
+                )
+            ]
+        )
+
+
+@bot.message_handler(regexp=tiktok_pattern)
+async def download_tiktok(message: types.Message) -> None:
+    progress_msg = await bot.reply_to(message, "🔎")
+
+    url = re.findall(tiktok_pattern, message.text)[0]
+    video_buffer = await get_tiktok_video(url)
+
+    if video_buffer:
+        await bot.send_video(
+            message.chat.id,
+            video=video_buffer,
+            supports_streaming=True,
+            reply_to_message_id=message.id
+        )
+    elif message.chat.type == "private":
+        await bot.reply_to(message, text="It seems not to be a link to video 😔")
+
+    await bot.delete_message(message.chat.id, progress_msg.id)
+
+
+@bot.inline_handler(lambda query: re.match(tiktok_pattern, query.query))
+async def inline_download_tiktok(query: types.InlineQuery) -> None:
+    url = re.findall(tiktok_pattern, query.query)[0]
+    video = await get_tiktok_video(url, return_url=True)
+
+    if video:
+        await bot.answer_inline_query(
+            query.id,
+            results=[
+                types.InlineQueryResultVideo(
+                    id=hashlib.md5(video.video_url.encode()).hexdigest(),
+                    video_url=video.video_url,
+                    mime_type="video/mp4",
+                    thumbnail_url=video.thumbnail_url,
                     title="Click here to send"
                 )
             ]
