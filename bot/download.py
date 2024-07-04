@@ -82,7 +82,7 @@ async def get_tiktok_video(tiktok_url: str, return_url: bool = False) -> BytesIO
     url = "https://all-video-downloader1.p.rapidapi.com/tiktokdl"
     payload = f"-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"url\"\r\n\r\n{tiktok_url}\r\n-----011000010111000001101001--\r\n\r\n"
     headers = {
-        "x-rapidapi-key": os.getenv("TIKTOK_TOKEN"),
+        "x-rapidapi-key": os.getenv("RAPIDAPI_TOKEN"),
         "x-rapidapi-host": "all-video-downloader1.p.rapidapi.com",
         "Content-Type": "multipart/form-data; boundary=---011000010111000001101001"
     }
@@ -110,7 +110,7 @@ async def get_instagram_video(instagram_url: str, return_url: bool = False) -> B
     url = "https://all-media-downloader.p.rapidapi.com/download"
     payload = f"-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"url\"\r\n\r\n{instagram_url}\r\n-----011000010111000001101001--\r\n\r\n"
     headers = {
-        'x-rapidapi-key': os.getenv("INSTAGRAM_TOKEN"),
+        'x-rapidapi-key': os.getenv("RAPIDAPI_TOKEN"),
         'x-rapidapi-host': "all-media-downloader.p.rapidapi.com",
         'Content-Type': "multipart/form-data; boundary=---011000010111000001101001"
     }
