@@ -162,3 +162,5 @@ cython_debug/
 *.tar
 rsa_key*
 *.ini
+
+.vscode

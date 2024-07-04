@@ -1,10 +1,11 @@
-version: "3.2"
-
 services:
   bot:
     build: .
+    image: mediadownbot:latest
     container_name: tgbot-downloader
     restart: always
     environment:
       - TOKEN
       - LOGGING_LEVEL
+      - TIKTOK_TOKEN
+      - INSTAGRAM_TOKEN

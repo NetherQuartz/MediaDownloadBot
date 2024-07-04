@@ -7,7 +7,7 @@
       ansible.builtin.file:
         path: mediabot
         state: directory
-      
+
     - name: Copy image
       ansible.builtin.copy:
         src: image.tar
@@ -17,24 +17,17 @@
       ansible.builtin.copy:
         src: docker-compose.yml
         dest: mediabot
-    
+
     - name: Copy .env
       ansible.builtin.copy:
         src: .env
         dest: mediabot
-        
-    - name: Modify compose file
-      ansible.builtin.lineinfile:
-        path: mediabot/docker-compose.yml
-        regexp: '    build: .'
-        line: '    image: mediadownbot:latest'
-    
+
     - name: Load image
       community.docker.docker_image_load:
         path: mediabot/image.tar
       register: result
-      
+
     - name: Run bot
       community.docker.docker_compose:
         project_src: mediabot
-        

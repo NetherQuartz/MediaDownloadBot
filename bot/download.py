@@ -1,11 +1,14 @@
+import os
+
 import urllib.parse
 
 import aiohttp
 
 from dataclasses import dataclass
-
 from io import BytesIO
 from bs4 import BeautifulSoup
+
+from telebot import logger
 
 
 @dataclass
@@ -14,7 +17,7 @@ class WebVideo:
     thumbnail_url: str
 
 
-async def download_video(session: aiohttp.ClientSession(), url: str) -> BytesIO:
+async def download_video(session: aiohttp.ClientSession, url: str) -> BytesIO:
     async with session.get(url) as video_response:
         video_buffer = BytesIO()
         video_buffer.write(await video_response.read())
@@ -24,10 +27,10 @@ async def download_video(session: aiohttp.ClientSession(), url: str) -> BytesIO:
 
 
 async def get_twitter_video(tweet_url: str, return_url: bool = False) -> BytesIO | WebVideo | None:
-    
+
     tweet_url = urllib.parse.quote(tweet_url, safe="")
     query_url = f"https://twitsave.com/info?url={tweet_url}"
-    
+
     async with aiohttp.ClientSession() as session, session.get(query_url) as response:
         text = await response.text()
         data = BeautifulSoup(text, "html.parser")
@@ -45,7 +48,7 @@ async def get_twitter_video(tweet_url: str, return_url: bool = False) -> BytesIO
             return None
         quality_buttons = download_button.find_all("a")
         highest_quality_url = quality_buttons[0].get("href")
-    
+
         return await download_video(session, highest_quality_url)
 
 
@@ -71,5 +74,33 @@ async def get_pinterest_video(pin_url: str, return_url: bool = False) -> BytesIO
         if return_url:
             thumbnail_url = video_div[0].find_all("img")[0].get("src")
             return WebVideo(video_url=video_url, thumbnail_url=thumbnail_url)
+
+        return await download_video(session, video_url)
+
+
+async def get_tiktok_video(tiktok_url: str, return_url: bool = False) -> BytesIO | WebVideo | None:
+    pass
+
+
+async def get_instagram_video(instagram_url: str, return_url: bool = False) -> BytesIO | WebVideo | None:
+
+    url = "https://all-media-downloader.p.rapidapi.com/download"
+    payload = f"-----011000010111000001101001\r\nContent-Disposition: form-data; name=\"url\"\r\n\r\n{instagram_url}\r\n-----011000010111000001101001--\r\n\r\n"
+    headers = {
+        'x-rapidapi-key': os.getenv("INSTAGRAM_TOKEN"),
+        'x-rapidapi-host': "all-media-downloader.p.rapidapi.com",
+        'Content-Type': "multipart/form-data; boundary=---011000010111000001101001"
+    }
+    logger.debug(f"{instagram_url=}")
+    async with aiohttp.ClientSession() as session, session.post(url, data=payload, headers=headers) as response:
+
+        data = await response.json()
+        logger.debug(data)
+        if not data:
+            return None
+        video_url = data[0]
+
+        if return_url:
+            return WebVideo(video_url=video_url, thumbnail_url=None)
 
         return await download_video(session, video_url)
