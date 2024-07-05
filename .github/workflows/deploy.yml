@@ -47,4 +47,4 @@ jobs:
         key: ${{ secrets.HOST_SSH_KEY }}
         inventory: |
           [hosts]
-          bot_host ansible_host=${{ secrets.SERVER_IP }} ansible_user=root
+          bot_host ansible_host=${{ secrets.SERVER_IP }} ansible_user=root ansible_port=9999
