@@ -1,3 +1,0 @@
-pytelegrambotapi
-beautifulsoup4
-aiohttp
