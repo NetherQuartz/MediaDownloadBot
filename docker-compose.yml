@@ -1,11 +1,11 @@
 services:
-  bot:
+  mediadownloadbot:
     build: .
     image: mediadownbot:latest
-    container_name: tgbot-downloader
+    container_name: mediadownloadbot
     restart: always
     environment:
       - TOKEN
       - LOGGING_LEVEL
-      - RAPIDAPI_TOKEN
-    mem_limit: 200m
+      - COBALT_URL
+    mem_limit: 400m
