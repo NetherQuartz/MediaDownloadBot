@@ -45,9 +45,9 @@ jobs:
         with:
           tags: |
             type=raw,value=latest
-            type=raw,value=${{ steps.release-meta.outputs.version }}
+            type=raw,value=${{ github.ref_name }}
             type=raw,value=${{ steps.release-meta.outputs.major_version }}
-            type=raw,value=${{ steps.release-meta.outputs.version }}-${{ steps.release-meta.outputs.commit_short }}
+            type=raw,value=${{ steps.release-meta.outputs.commit_short }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Build and push Docker image
