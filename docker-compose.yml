@@ -1,7 +1,7 @@
 services:
   mediadownloadbot:
     build: .
-    image: mediadownbot:latest
+    image: ghcr.io/netherquartz/mediadownloadbot:latest
     container_name: mediadownloadbot
     restart: always
     environment:
