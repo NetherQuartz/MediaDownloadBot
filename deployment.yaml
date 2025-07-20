@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mediadownloadbot
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mediadownloadbot
+  template:
+    metadata:
+      labels:
+        app: mediadownloadbot
+    spec:
+      containers:
+      - name: mediadownloadbot
+        image: ghcr.io/netherquartz/mediadownloadbot:latest
+        env:
+        - name: COBALT_URL
+          value: "http://cobalt.default.svc.cluster.local:31000"  # requires Cobalt>=11
+        - name: LOGGING_LEVEL
+          value: "DEBUG"
+        - name: TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: mediadownloadbot-secret
+              key: TOKEN

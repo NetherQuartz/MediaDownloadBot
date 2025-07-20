@@ -10,3 +10,15 @@ To do:
 - [x] Instagram videos
 - [x] TikTok videos
 - [ ] VK videos
+
+## K8s Deployment
+
+Create a secret with bot's token:
+```bash
+kubectl create secret generic mediadownloadbot-secret --from-literal=TOKEN=...
+```
+
+Deploy:
+```bash
+kubectl apply -f deployment.yaml
+```
