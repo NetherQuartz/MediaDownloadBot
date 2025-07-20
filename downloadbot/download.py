@@ -66,7 +66,7 @@ async def get_video(post_url: str, download: bool = True) -> Video:
                 json={
                     "url": post_url,
                     "alwaysProxy": download,
-                    "twitterGif": False  # FIXME: send an error message if only proxy mode available in inline query
+                    "convertGif": False  # FIXME: send an error message if only proxy mode available in inline query
                 },
                 headers=HEADERS
             )
