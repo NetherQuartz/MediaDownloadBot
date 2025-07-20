@@ -7,5 +7,17 @@ services:
     environment:
       - TOKEN
       - LOGGING_LEVEL
-      - COBALT_URL
+      - COBALT_URL=http://cobalt:31000
     mem_limit: 400m
+    depends_on:
+      - cobalt
+
+  cobalt:
+    image: ghcr.io/imputnet/cobalt:11
+    container_name: cobalt
+    restart: always
+    environment:
+      - API_URL=cobalt
+      - API_PORT=31000
+    ports:
+      - 31000:31000
