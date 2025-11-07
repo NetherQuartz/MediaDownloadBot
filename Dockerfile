@@ -4,7 +4,7 @@ WORKDIR /usr/app
 
 ENV TZ Europe/Moscow
 
-RUN apk add --no-cache python3 py3-pip py3-opencv && \
+RUN apk add --no-cache python3 py3-pip py3-opencv ffmpeg && \
     pip3 install --break-system-packages --no-cache-dir pytelegrambotapi aiohttp && \
     apk del py3-pip
 

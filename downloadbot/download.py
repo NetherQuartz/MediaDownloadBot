@@ -1,6 +1,8 @@
 import os
 import tempfile
 import asyncio
+import subprocess
+import json
 
 import aiohttp
 import cv2
@@ -20,6 +22,8 @@ class Video:
     thumbnail_url: str | None
     height: int | None
     width: int | None
+    is_image: bool
+    has_audio: bool | None
 
 
 HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
@@ -36,14 +40,43 @@ async def download_video(session: aiohttp.ClientSession, video_data: Video) -> V
 
     with tempfile.NamedTemporaryFile(dir="/dev/shm") as tmp:
         tmp.write(video_buffer.getvalue())
+        tmp.flush()
         logger.debug(f"{tmp.name=}")
 
         capture = cv2.VideoCapture(tmp.name)
         _, image = capture.read()
         height, width, _ = image.shape
+        video_data.height = height
+        video_data.width = width
+        video_data.is_image = not capture.grab()
+        capture.release()
 
-    video_data.height = height
-    video_data.width = width
+        cmd = [
+            "ffprobe",
+            "-v", "error",
+            "-select_streams", "a",
+            "-show_entries", "stream=index",
+            "-of", "json",
+            tmp.name
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        info = json.loads(result.stdout or r"{}")
+        video_data.has_audio = bool(info.get("streams"))
+
+        if not video_data.has_audio and not video_data.is_image:
+            gif_path = tmp.name + ".gif"
+            convert_cmd = [
+                "ffmpeg", "-y",
+                "-i", tmp.name,
+                "-f", "gif",
+                gif_path
+            ]
+            subprocess.run(convert_cmd, check=True)
+            with open(gif_path, "rb") as f:
+                video_buffer.write(f.read())
+                video_buffer.seek(0)
+
+    logger.info(f"{video_data=}")
     return video_data
 
 
@@ -55,7 +88,9 @@ async def get_video(post_url: str, download: bool = True) -> Video:
         buffer=None,
         thumbnail_url=DEFAULT_THUMBNAIL,
         height=None,
-        width=None
+        width=None,
+        is_image=False,
+        has_audio=None
     )
 
     async with aiohttp.ClientSession() as session:

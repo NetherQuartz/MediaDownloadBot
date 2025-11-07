@@ -44,14 +44,32 @@ async def download_video(message: types.Message) -> None:
         video = await get_video(url)
 
         if video.buffer:
-            await bot.send_video(
-                message.chat.id,
-                video=video.buffer,
-                height=video.height,
-                width=video.width,
-                supports_streaming=True,
-                reply_parameters=types.ReplyParameters(message_id=message.id)
-            )
+            if not video.is_image and video.has_audio:
+                telebot.logger.debug("Sending video")
+                await bot.send_video(
+                    message.chat.id,
+                    video=video.buffer,
+                    height=video.height,
+                    width=video.width,
+                    supports_streaming=True,
+                    reply_parameters=types.ReplyParameters(message_id=message.id)
+                )
+            elif video.is_image:
+                telebot.logger.debug("Sending photo")
+                await bot.send_photo(
+                    message.chat.id,
+                    photo=video.buffer,
+                    reply_parameters=types.ReplyParameters(message_id=message.id)
+                )
+            elif not video.has_audio:
+                telebot.logger.debug("Sending gif")
+                await bot.send_animation(
+                    message.chat.id,
+                    animation=video.buffer,
+                    height=video.height,
+                    width=video.width,
+                    reply_parameters=types.ReplyParameters(message_id=message.id)
+                )
         elif message.chat.type == "private":
             await bot.reply_to(message, text="It seems not to be a link to video 😔")
 
