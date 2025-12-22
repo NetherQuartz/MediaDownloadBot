@@ -48,8 +48,9 @@ async def download_video(message: types.Message) -> None:
     progress_msg = await bot.reply_to(message, "🔎")
     try:
         url = re.findall(combined_pattern, message.text)[0]
-        video = await get_video(url, download=True)
+        video = await get_video(url, download=False)
         msg = None
+        video.content_type = "video/mp4"  # TODO: fix images downloads
 
         match video.content_type:
             case "video/mp4":
