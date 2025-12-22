@@ -24,6 +24,8 @@ class Video:
     width: int | None
     is_image: bool
     has_audio: bool | None
+    skipped_download: bool
+    content_type: str | None
 
 
 HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
@@ -31,9 +33,24 @@ DEFAULT_THUMBNAIL = "https://avatars.mds.yandex.net/i?id=f8e7cca4d77040af7b7a642
 
 
 async def download_video(session: aiohttp.ClientSession, video_data: Video) -> Video:
-    async with session.get(video_data.url) as video_response:
+    async with session.get(video_data.url, headers={"Range": "bytes=0-"}) as video_response:
+        logger.info(f"Response headers: {video_response.headers}")
+        video_data.content_type = video_response.headers.get("Content-Type")
+        logger.info(f"Content type: {video_data.content_type}")
+        if video_data.content_type and video_data.content_type.split("/")[0] == "video":
+            video_data.skipped_download = True
+            return video_data
+
         video_buffer = BytesIO()
-        video_buffer.write(await video_response.read())
+        while True:
+            chunk = None
+            try:
+                chunk = await video_response.content.readany()
+            except:
+                break
+            if not chunk:
+                break
+            video_buffer.write(chunk)
         video_buffer.seek(0)
 
     video_data.buffer = video_buffer
@@ -63,19 +80,6 @@ async def download_video(session: aiohttp.ClientSession, video_data: Video) -> V
         info = json.loads(result.stdout or r"{}")
         video_data.has_audio = bool(info.get("streams"))
 
-        if not video_data.has_audio and not video_data.is_image:
-            gif_path = tmp.name + ".gif"
-            convert_cmd = [
-                "ffmpeg", "-y",
-                "-i", tmp.name,
-                "-f", "gif",
-                gif_path
-            ]
-            subprocess.run(convert_cmd, check=True)
-            with open(gif_path, "rb") as f:
-                video_buffer.write(f.read())
-                video_buffer.seek(0)
-
     logger.info(f"{video_data=}")
     return video_data
 
@@ -90,7 +94,9 @@ async def get_video(post_url: str, download: bool = True) -> Video:
         height=None,
         width=None,
         is_image=False,
-        has_audio=None
+        has_audio=None,
+        skipped_download=False,
+        content_type=None
     )
 
     async with aiohttp.ClientSession() as session:
