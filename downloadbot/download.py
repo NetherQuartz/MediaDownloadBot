@@ -106,7 +106,7 @@ async def get_video(post_url: str, download: bool = True) -> Video:
                 url=API_URL,
                 json={
                     "url": post_url,
-                    "alwaysProxy": download,
+                    "alwaysProxy": False,
                     "convertGif": False  # FIXME: send an error message if only proxy mode available in inline query
                 },
                 headers=HEADERS
