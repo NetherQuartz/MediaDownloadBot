@@ -9,7 +9,7 @@ To do:
 - [x] Pinterest videos
 - [x] Instagram videos
 - [x] TikTok videos
-- [ ] VK videos
+- [x] VK videos
 
 ## K8s Deployment
 
