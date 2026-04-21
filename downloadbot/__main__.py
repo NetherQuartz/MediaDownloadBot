@@ -28,18 +28,12 @@ async def start(message: types.Message) -> None:
     await bot.send_message(message.chat.id, text=welcome_text, parse_mode="markdown")
 
 
-twitter_pattern = r"(?:https?://)?(?:x\.com|twitter\.com)/.+/status/\d+"
-pinterest_pattern = r"(?:https?://)?(?:www\.)?(?:\w+\.)?(?:pin\.it|pinterest\.com)/\S+"
-instagram_pattern = r"(?:https?://)?(?:www\.)?instagram\.com/\S+"
-tiktok_pattern = r"(?:https?://)?(?:www\.)?(?:\w+\.)?tiktok\.com/\S+"
-vk_pattern = r"(?:https?://)?(?:www\.)?(?:\w+\.)?vk\.(?:com|ru)/clip-\S+"
-
 combined_pattern = "|".join([
-    twitter_pattern,
-    pinterest_pattern,
-    instagram_pattern,
-    tiktok_pattern,
-    vk_pattern
+    r"(?:https?://)?(?:x\.com|twitter\.com)/.+/status/\d+",
+    r"(?:https?://)?(?:www\.)?(?:\w+\.)?(?:pin\.it|pinterest\.com)/\S+",
+    r"(?:https?://)?(?:www\.)?instagram\.com/\S+",
+    r"(?:https?://)?(?:www\.)?(?:\w+\.)?tiktok\.com/\S+",
+    r"(?:https?://)?(?:www\.)?(?:\w+\.)?vk\.(?:com|ru)/clip-\S+",
 ])
 
 
@@ -53,8 +47,15 @@ async def download_video(message: types.Message) -> None:
         video.content_type = "video/mp4"  # TODO: fix images downloads
 
         match video.content_type:
-            case "video/mp4":
-                telebot.logger.debug("Sending video")
+            case "video/mp4" if video.buffer:
+                telebot.logger.debug("Sending video buffer")
+                msg = await bot.send_video(
+                    message.chat.id,
+                    video=video.buffer,
+                    reply_parameters=types.ReplyParameters(message_id=message.id)
+                )
+            case "video/mp4" if video.url:
+                telebot.logger.debug("Sending video URL")
                 msg = await bot.send_video(
                     message.chat.id,
                     video=video.url,
@@ -68,11 +69,13 @@ async def download_video(message: types.Message) -> None:
                     reply_parameters=types.ReplyParameters(message_id=message.id)
                 )
             case _ if message.chat.type == "private":
-                await bot.reply_to(message, text="It seems not to be a link to video 😔")
+                await bot.reply_to(message, text="Couldn't get any media 😔")
 
         if msg:
             telebot.logger.info(f"{msg.video=} {msg.photo=} {msg.animation=} {msg.document=}")
 
+    except ValueError as e:
+        await bot.reply_to(message, text=f"⚠️ {e}")
     except Exception as e:
         telebot.logger.exception(e)
         await bot.reply_to(message, text="⚠️ An error occured, please contact the administrator")

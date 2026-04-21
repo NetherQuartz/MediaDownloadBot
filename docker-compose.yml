@@ -7,17 +7,28 @@ services:
     environment:
       - TOKEN
       - LOGGING_LEVEL
-      - COBALT_URL=http://cobalt:31000
+      - COBALT_URL
     mem_limit: 400m
     depends_on:
       - cobalt
 
   cobalt:
     image: ghcr.io/imputnet/cobalt:11
+    init: true
+    read_only: true
+    restart: unless-stopped
     container_name: cobalt
-    restart: always
-    environment:
-      - API_URL=cobalt
-      - API_PORT=31000
     ports:
-      - 31000:31000
+      - 9000:9000/tcp
+    environment:
+      API_URL: $API_URL
+      FORCE_LOCAL_PROCESSING: always
+    labels:
+      - com.centurylinklabs.watchtower.scope=cobalt
+
+  watchtower:
+    image: ghcr.io/containrrr/watchtower
+    restart: unless-stopped
+    command: --cleanup --scope cobalt --interval 900 --include-restarting
+    volumes:
+        - /var/run/docker.sock:/var/run/docker.sock

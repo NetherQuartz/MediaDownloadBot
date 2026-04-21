@@ -37,9 +37,6 @@ async def download_video(session: aiohttp.ClientSession, video_data: Video) -> V
         logger.info(f"Response headers: {video_response.headers}")
         video_data.content_type = video_response.headers.get("Content-Type")
         logger.info(f"Content type: {video_data.content_type}")
-        if video_data.content_type and video_data.content_type.split("/")[0] == "video":
-            video_data.skipped_download = True
-            return video_data
 
         video_buffer = BytesIO()
         while True:
@@ -101,12 +98,12 @@ async def get_video(post_url: str, download: bool = True) -> Video:
 
     async with aiohttp.ClientSession() as session:
 
-        for _ in range(10):
+        for _ in range(5):
             response = await session.post(
                 url=API_URL,
                 json={
                     "url": post_url,
-                    "alwaysProxy": False,
+                    "alwaysProxy": True,
                     "convertGif": False  # FIXME: send an error message if only proxy mode available in inline query
                 },
                 headers=HEADERS
@@ -119,11 +116,23 @@ async def get_video(post_url: str, download: bool = True) -> Video:
                 await asyncio.sleep(1)
                 continue
 
-            # not sure how often this may occur
-            if video_url.startswith(API_URL):
-                logger.info(f"COBALT URL FOUND: {post_url=} {video_url=}")
-
             video_data.url = video_url
+
+            result_response = await session.get(video_url)
+            if result_response.status != 200:
+                continue
+
+            logger.debug("Headers: %s", result_response.headers)
+
+            video_size = int(result_response.headers.get("Content-Length", 0)) / 1e6
+            logger.info("Video size: %s MB", video_size)
+
+            if video_size > 50:
+                raise ValueError("File is too big")
+
+            if video_size > 20:
+                return await download_video(session, video_data)
+
             if not download:
                 return video_data
 
