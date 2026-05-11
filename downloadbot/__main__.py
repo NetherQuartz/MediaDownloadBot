@@ -42,9 +42,10 @@ def retry_keyboard() -> types.InlineKeyboardMarkup:
         keyboard=[
             [
                 types.InlineKeyboardButton(
-                    text="🔄 Retry",
+                    text="Retry",
                     callback_data="retry",
-                    style="danger"
+                    style="danger",
+                    icon_custom_emoji_id="6021336006286907449"  # may break if my premium ends
                 )
             ]
         ]
