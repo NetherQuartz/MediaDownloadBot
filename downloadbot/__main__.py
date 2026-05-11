@@ -37,6 +37,20 @@ combined_pattern = "|".join([
 ])
 
 
+def retry_keyboard() -> types.InlineKeyboardMarkup:
+    return types.InlineKeyboardMarkup(
+        keyboard=[
+            [
+                types.InlineKeyboardButton(
+                    text="🔄 Retry",
+                    callback_data="retry",
+                    style="danger"
+                )
+            ]
+        ]
+    )
+
+
 @bot.message_handler(regexp=combined_pattern)
 async def download_video(message: types.Message) -> None:
     progress_msg = await bot.reply_to(message, "🔎")
@@ -78,7 +92,11 @@ async def download_video(message: types.Message) -> None:
         await bot.reply_to(message, text=f"⚠️ {e}")
     except Exception as e:
         telebot.logger.exception(e)
-        await bot.reply_to(message, text="⚠️ An error occured, please contact the administrator")
+        await bot.reply_to(
+            message,
+            text="⚠️ An error occured, please contact the administrator",
+            reply_markup=retry_keyboard()
+        )
 
     await bot.delete_message(message.chat.id, progress_msg.id)
 
@@ -100,6 +118,19 @@ async def inline_download_instagram(query: types.InlineQuery) -> None:
             )
         ]
     )
+
+
+@bot.callback_query_handler(func=lambda c: c.data == "retry")
+async def back_callback(call: types.CallbackQuery) -> None:
+    telebot.logger.debug(f"Retry callback {call.message.chat.id=} {call.message.reply_to_message.id=}")
+
+    result = await download_video(call.message.reply_to_message)
+    await bot.edit_message_reply_markup(
+        call.message.chat.id,
+        call.message.id,
+        reply_markup=None
+    )
+    return result
 
 
 if __name__ == "__main__":
