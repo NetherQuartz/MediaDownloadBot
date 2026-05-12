@@ -85,19 +85,49 @@ async def download_video(message: types.Message) -> None:
                     reply_parameters=types.ReplyParameters(message_id=message.id)
                 )
             case _ if message.chat.type == "private":
-                await bot.reply_to(message, text="Couldn't get any media 😔")
+                await bot.reply_to(
+                    message,
+                    text="Couldn't get any media 😔",
+                    entities=[
+                        types.MessageEntity(
+                            type="custom_emoji",
+                            offset=23,
+                            length=len("😔".encode("utf-16-le")) // 2,
+                            custom_emoji_id="6021570979652701502"
+                        )
+                    ]
+                )
 
         if msg:
             telebot.logger.info(f"{msg.video=} {msg.photo=} {msg.animation=} {msg.document=}")
 
     except ValueError as e:
-        await bot.reply_to(message, text=f"⚠️ {e}")
+        await bot.reply_to(
+            message,
+            text=f"⚠️ {e}",
+            entities=[
+                types.MessageEntity(
+                    type="custom_emoji",
+                    offset=0,
+                    length=len("⚠️".encode("utf-16-le")) // 2,
+                    custom_emoji_id="5800946236303347740"
+                )
+            ]
+        )
     except Exception as e:
         telebot.logger.exception(e)
         await bot.reply_to(
             message,
             text="⚠️ An error occured, please contact the administrator",
-            reply_markup=retry_keyboard()
+            reply_markup=retry_keyboard(),
+            entities=[
+                types.MessageEntity(
+                    type="custom_emoji",
+                    offset=0,
+                    length=len("⚠️".encode("utf-16-le")) // 2,
+                    custom_emoji_id="5800946236303347740"
+                )
+            ]
         )
 
     await bot.delete_message(message.chat.id, progress_msg.id)
