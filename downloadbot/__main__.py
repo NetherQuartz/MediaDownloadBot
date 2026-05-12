@@ -34,6 +34,7 @@ combined_pattern = "|".join([
     r"(?:https?://)?(?:www\.)?instagram\.com/\S+",
     r"(?:https?://)?(?:www\.)?(?:\w+\.)?tiktok\.com/\S+",
     r"(?:https?://)?(?:www\.)?(?:\w+\.)?vk\.(?:com|ru)/clip-\S+",
+    r"(?:https?://)?(?:www\.)?reddit\.com/\S+",
 ])
 
 

@@ -8,7 +8,8 @@ services:
       - TOKEN
       - LOGGING_LEVEL
       - COBALT_URL
-    mem_limit: 400m
+    mem_limit: 2g
+    shm_size: 2g
     depends_on:
       - cobalt
 

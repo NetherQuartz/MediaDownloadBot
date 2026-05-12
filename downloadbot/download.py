@@ -26,6 +26,8 @@ class Video:
     has_audio: bool | None
     skipped_download: bool
     content_type: str | None
+    merge_urls: list[str] | None
+    filename: str | None
 
 
 HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
@@ -81,6 +83,95 @@ async def download_video(session: aiohttp.ClientSession, video_data: Video) -> V
     return video_data
 
 
+async def download_and_merge_video(session: aiohttp.ClientSession, video_data: Video) -> Video:
+    buffers = {}
+    suffix = video_data.filename.rsplit(".")[-1] if video_data.filename else "mp4"
+    logger.debug(f"{video_data.filename=} {suffix=}")
+    for url in video_data.merge_urls:
+        async with session.get(url, headers={"Range": "bytes=0-"}) as video_response:
+            logger.info(f"Response headers: {video_response.headers}")
+            video_buffer = BytesIO()
+            while True:
+                chunk = None
+                try:
+                    chunk = await video_response.content.readany()
+                except:
+                    break
+                if not chunk:
+                    break
+                video_buffer.write(chunk)
+            video_buffer.seek(0)
+
+        with tempfile.NamedTemporaryFile(dir="/dev/shm") as tmp:
+            tmp.write(video_buffer.getvalue())
+            tmp.flush()
+            logger.debug(f"{tmp.name=}")
+
+            cmd = [
+                "ffprobe",
+                "-v", "quiet",
+                "-print_format", "json",
+                "-show_streams",
+                tmp.name,
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            data = json.loads(result.stdout or r"{}")
+            has_video = False
+            has_audio = False
+            for stream in data.get("streams", []):
+                codec_type = stream.get("codec_type")
+                if codec_type == "video":
+                    has_video = True
+                if codec_type == "audio":
+                    has_audio = True
+            if has_audio and has_video:
+                video_data.buffer = video_buffer
+                return video_data
+
+            if has_audio:
+                buffers["audio"] = video_buffer
+            elif has_video:
+                buffers["video"] = video_buffer
+
+    logger.info(f"Buffers: {buffers.keys()}")
+    if len(buffers) < 2:
+        return video_data
+
+    with (
+        tempfile.NamedTemporaryFile(dir="/dev/shm", suffix=f".{suffix}") as tmp_audio,
+        tempfile.NamedTemporaryFile(dir="/dev/shm", suffix=f".{suffix}") as tmp_video,
+        tempfile.NamedTemporaryFile(dir="/dev/shm", suffix=f".{suffix}") as tmp_final
+    ):
+        tmp_audio.write(buffers["audio"].getvalue())
+        tmp_audio.flush()
+        tmp_video.write(buffers["video"].getvalue())
+        tmp_video.flush()
+        logger.debug(f"{tmp_video.name=} {tmp_audio.name=} {tmp_final.name=}")
+
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i", tmp_video.name,
+            "-i", tmp_audio.name,
+            "-map", "0:v:0",
+            "-map", "1:a:0",
+            "-c", "copy",
+            "-shortest",
+            tmp_final.name,
+        ]
+
+        subprocess.run(cmd, check=True)
+        video_data.buffer = open(tmp_final.name, "rb").read()
+
+        video_size = len(video_data.buffer) / 1e6
+        logger.info("Final video size: %s MB", video_size)
+
+        if video_size > 50:
+            raise ValueError("File is too big")
+
+    return video_data
+
+
 async def get_video(post_url: str, download: bool = True) -> Video:
     logger.debug(post_url)
 
@@ -93,7 +184,9 @@ async def get_video(post_url: str, download: bool = True) -> Video:
         is_image=False,
         has_audio=None,
         skipped_download=False,
-        content_type=None
+        content_type=None,
+        merge_urls=None,
+        filename=None,
     )
 
     async with aiohttp.ClientSession() as session:
@@ -111,32 +204,40 @@ async def get_video(post_url: str, download: bool = True) -> Video:
             response = await response.json()
 
             logger.debug(response)
-            video_url: str | None = response.get("url")
-            if not video_url:
-                await asyncio.sleep(1)
-                continue
 
-            video_data.url = video_url
+            match response.get("status"):
 
-            result_response = await session.get(video_url)
-            if result_response.status != 200:
-                continue
+                case "tunnel" | "redirect" if video_url := response.get("url"):
+                    video_data.url = video_url
 
-            logger.debug("Headers: %s", result_response.headers)
+                    result_response = await session.get(video_url)
+                    if result_response.status != 200:
+                        continue
 
-            video_size = int(result_response.headers.get("Content-Length", 0)) / 1e6
-            logger.info("Video size: %s MB", video_size)
+                    logger.debug("Headers: %s", result_response.headers)
 
-            if video_size > 50:
-                raise ValueError("File is too big")
+                    video_size = int(result_response.headers.get("Content-Length", 0)) / 1e6
+                    logger.info("Video size: %s MB", video_size)
 
-            if video_size > 20:
-                return await download_video(session, video_data)
+                    if video_size > 50:
+                        raise ValueError("File is too big")
 
-            if not download:
-                return video_data
+                    if video_size > 20:
+                        return await download_video(session, video_data)
 
-            return await download_video(session, video_data)
+                    if not download:
+                        return video_data
+
+                    return await download_video(session, video_data)
+
+                case "local-processing" if response.get("type") == "merge":
+                    video_data.merge_urls = response.get("tunnel", [])
+                    video_data.filename = response.get("output", {}).get("filename")
+                    return await download_and_merge_video(session, video_data)
+
+                case _:
+                    await asyncio.sleep(1)
+                    continue
 
     # TODO: add message if couldn't get video url
     return video_data
