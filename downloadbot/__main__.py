@@ -153,15 +153,14 @@ async def inline_download_instagram(query: types.InlineQuery) -> None:
 
 
 @bot.callback_query_handler(func=lambda c: c.data == "retry")
-async def back_callback(call: types.CallbackQuery) -> None:
+async def retry_callback(call: types.CallbackQuery) -> None:
     telebot.logger.debug(f"Retry callback {call.message.chat.id=} {call.message.reply_to_message.id=}")
-
-    result = await download_video(call.message.reply_to_message)
     await bot.edit_message_reply_markup(
         call.message.chat.id,
         call.message.id,
         reply_markup=None
     )
+    result = await download_video(call.message.reply_to_message)
     return result
 
 
